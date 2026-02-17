@@ -1,13 +1,13 @@
-import { cn } from '@/lib/utils';
-import type { LucideIcon, LucideProps } from 'lucide-react-native';
-import { withUniwind } from 'uniwind';
+import { cn } from '@/lib/utils'
+import type { HugeiconsIconComponent, HugeiconsProps } from '@hugeicons/react-native'
+import { withUniwind } from 'uniwind'
 
-type IconProps = LucideProps & {
-  as: LucideIcon;
-};
+type IconProps = HugeiconsProps & {
+  as: HugeiconsIconComponent
+}
 
 function IconImpl({ as: IconComponent, ...props }: IconProps) {
-  return <IconComponent {...props} />;
+  return <IconComponent {...props} />
 }
 
 const StyledIcon = withUniwind(IconImpl, {
@@ -19,12 +19,12 @@ const StyledIcon = withUniwind(IconImpl, {
     fromClassName: 'className',
     styleProperty: 'color',
   },
-});
+})
 
 /**
- * A wrapper component for Lucide icons with Uniwind `className` support via `withUniwind`.
+ * A wrapper component for HugeIcons icons with Uniwind `className` support via `withUniwind`.
  *
- * This component allows you to render any Lucide icon while applying utility classes
+ * This component allows you to render any HugeIcons icon while applying utility classes
  * using `uniwind`. It avoids the need to wrap or configure each icon individually.
  *
  * @component
@@ -36,15 +36,15 @@ const StyledIcon = withUniwind(IconImpl, {
  * <Icon as={ArrowRight} className="text-red-500 size-4" />
  * ```
  *
- * @param {LucideIcon} as - The Lucide icon component to render.
+ * @param {HugeiconsIconComponent} as - The HugeIcons icon component to render.
  * @param {string} className - Utility classes to style the icon using Uniwind.
  * @param {number} size - Icon size (overrides the size class).
- * @param {...LucideProps} ...props - Additional Lucide icon props passed to the "as" icon.
+ * @param {...HugeiconsProps} ...props - Additional HugeIcons icon props passed to the "as" icon.
  */
 function Icon({ as: IconComponent, className, ...props }: IconProps) {
   return (
     <StyledIcon as={IconComponent} className={cn('text-foreground size-5', className)} {...props} />
-  );
+  )
 }
 
-export { Icon };
+export { Icon }
