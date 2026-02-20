@@ -28,7 +28,8 @@ import {
   isValidPublicKey,
   TX_PAGE_SIZE,
 } from '@/lib/solana'
-import { useTokenMetaStore } from '@/store/token-meta-store'
+import { getMetaDataFromCacheOrFetch } from '@/lib/cache/token-metadata'
+import { TOKEN_PAGE } from '@/constants/solana'
 import { router } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -44,47 +45,39 @@ import {
 } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 
-const TOKEN_PAGE = 10
+type WalletData = {
+  balance: GetBalanceResult
+  allTokens: TokenBalance[]
+  visibleTokens: GetTokensResult
+  transactions: GetTransactionsResult
+  hasMoreTx: boolean
+}
 
 const TransactionScreen = () => {
   const { rpc, network } = useNetwork()
-  const fetchBatch = useTokenMetaStore((s) => s.fetchBatch)
   const scrollRef = useRef<ScrollView>(null)
   const scrollY = useSharedValue(0)
 
   const [value, setValue] = useState<string>('')
-  const [balance, setBalance] = useState<GetBalanceResult | null>(null)
-  const [allTokens, setAllTokens] = useState<TokenBalance[]>([])
-  const [visibleTokens, setVisibleTokens] = useState<GetTokensResult>([])
-  const [loadingTokenMeta, setLoadingTokenMeta] = useState(false)
-  const [transactions, setTransactions] = useState<GetTransactionsResult>([])
-  const [hasMoreTx, setHasMoreTx] = useState(false)
-  const [hasSearched, setHasSearched] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [walletData, setWalletData] = useState<WalletData | null>(null)
 
-  const hasMoreTokens = visibleTokens.length < allTokens.length
-  const canShowLess = visibleTokens.length > TOKEN_PAGE
+  const hasSearched = walletData !== null
+  const hasMoreTokens = walletData
+    ? walletData.visibleTokens.length < walletData.allTokens.length
+    : false
+  const canShowLess = walletData ? walletData.visibleTokens.length > TOKEN_PAGE : false
 
-  // Reset everything when the user switches networks
+  const patchVisible = (tokens: GetTokensResult) =>
+    setWalletData((prev) => (prev ? { ...prev, visibleTokens: tokens } : prev))
+
   useEffect(() => {
     setValue('')
-    setBalance(null)
-    setAllTokens([])
-    setVisibleTokens([])
-    setTransactions([])
-    setHasMoreTx(false)
-    setHasSearched(false)
+    setWalletData(null)
   }, [network])
 
-  const resetResults = () => {
-    setBalance(null)
-    setAllTokens([])
-    setVisibleTokens([])
-    setTransactions([])
-    setHasMoreTx(false)
-    setHasSearched(false)
-  }
+  const resetResults = () => setWalletData(null)
 
   const handleChangeValue = (text: string) => setValue(text)
 
@@ -113,24 +106,20 @@ const TransactionScreen = () => {
         getAllTransactions(rpc, publicKey),
       ])
 
-      setBalance(bal)
-      setAllTokens(tokn)
-      setTransactions(txns)
-      setHasMoreTx(txns.length === TX_PAGE_SIZE)
-      setHasSearched(true)
-
-      // Load first page of metadata
       const firstPage = tokn.slice(0, TOKEN_PAGE)
+
+      setWalletData({
+        balance: bal,
+        allTokens: tokn,
+        visibleTokens: firstPage,
+        transactions: txns,
+        hasMoreTx: txns.length === TX_PAGE_SIZE,
+      })
+
       if (firstPage.length > 0) {
-        setLoadingTokenMeta(true)
-        try {
-          const metaMap = await fetchBatch(rpc, firstPage.map((t) => t.mint))
-          setVisibleTokens(firstPage.map((t) => ({ ...t, ...metaMap.get(t.mint) })))
-        } finally {
-          setLoadingTokenMeta(false)
-        }
-      } else {
-        setVisibleTokens([])
+        getMetaDataFromCacheOrFetch(firstPage.map((t) => t.mint)).then((metaMap) => {
+          patchVisible(firstPage.map((t) => ({ ...t, ...metaMap.get(t.mint) })))
+        })
       }
     } catch (err) {
       console.error('Error fetching data:', err as Error)
@@ -141,7 +130,8 @@ const TransactionScreen = () => {
   }
 
   const handleLoadMoreTransactions = async () => {
-    const lastSig = transactions[transactions.length - 1]?.signature
+    if (!walletData) return
+    const lastSig = walletData.transactions[walletData.transactions.length - 1]?.signature
     if (!lastSig) return
 
     const { success, address: publicKey } = isValidPublicKey(value.trim())
@@ -150,8 +140,15 @@ const TransactionScreen = () => {
     setLoadingMore(true)
     try {
       const more = await getAllTransactions(rpc, publicKey, lastSig)
-      setTransactions((prev) => [...prev, ...more])
-      setHasMoreTx(more.length === TX_PAGE_SIZE)
+      setWalletData((prev) =>
+        prev
+          ? {
+              ...prev,
+              transactions: [...prev.transactions, ...more],
+              hasMoreTx: more.length === TX_PAGE_SIZE,
+            }
+          : prev,
+      )
     } catch (err) {
       console.error('Load more transactions error:', (err as Error).message)
     } finally {
@@ -159,22 +156,33 @@ const TransactionScreen = () => {
     }
   }
 
-  const handleLoadMoreTokens = async () => {
-    const nextSlice = allTokens.slice(visibleTokens.length, visibleTokens.length + TOKEN_PAGE)
+  const handleLoadMoreTokens = () => {
+    if (!walletData) return
+    const from = walletData.visibleTokens.length
+    const nextSlice = walletData.allTokens.slice(from, from + TOKEN_PAGE)
     if (nextSlice.length === 0) return
-    setLoadingTokenMeta(true)
-    try {
-      const metaMap = await fetchBatch(rpc, nextSlice.map((t) => t.mint))
-      setVisibleTokens((prev) => [...prev, ...nextSlice.map((t) => ({ ...t, ...metaMap.get(t.mint) }))])
-    } catch (err) {
-      console.error('Load more tokens error:', err)
-    } finally {
-      setLoadingTokenMeta(false)
-    }
+
+    setWalletData((prev) =>
+      prev ? { ...prev, visibleTokens: [...prev.visibleTokens, ...nextSlice] } : prev,
+    )
+
+    getMetaDataFromCacheOrFetch(nextSlice.map((t) => t.mint)).then((metaMap) => {
+      setWalletData((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          visibleTokens: [
+            ...prev.visibleTokens.slice(0, from),
+            ...nextSlice.map((t) => ({ ...t, ...metaMap.get(t.mint) })),
+          ],
+        }
+      })
+    })
   }
 
   const handleShowLessTokens = () => {
-    setVisibleTokens((prev) => prev.slice(0, TOKEN_PAGE))
+    if (!walletData) return
+    patchVisible(walletData.visibleTokens.slice(0, TOKEN_PAGE))
   }
 
   const handleTokenPress = (token: GetTokensResult[number]) => {
@@ -198,7 +206,8 @@ const TransactionScreen = () => {
     <SafeAreaViewUniwind className="bg-background flex-1" edges={['top']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1">
+        className="flex-1"
+      >
         <ScrollView
           ref={scrollRef}
           keyboardShouldPersistTaps="handled"
@@ -206,7 +215,8 @@ const TransactionScreen = () => {
           scrollEventThrottle={16}
           onScroll={(e) => {
             scrollY.value = e.nativeEvent.contentOffset.y
-          }}>
+          }}
+        >
           {/* Header */}
           <View className="mt-4 flex-row items-center justify-between pb-6">
             <HeaderText />
@@ -222,7 +232,8 @@ const TransactionScreen = () => {
               <LabelUniwind
                 className="text-muted-foreground/75 mx-2 text-[1.25rem]"
                 htmlFor="input"
-                nativeID="input">
+                nativeID="input"
+              >
                 Enter a wallet address
               </LabelUniwind>
               <Input
@@ -248,7 +259,8 @@ const TransactionScreen = () => {
                 className="border-input ring-muted h-12 px-10 ring-1"
                 variant="outline"
                 disabled={loading}
-                onPress={handleClear}>
+                onPress={handleClear}
+              >
                 <Text className="text-xl">Clear</Text>
               </Button>
             </View>
@@ -261,16 +273,20 @@ const TransactionScreen = () => {
             <WalletPrompt />
           ) : (
             <>
-              {balance !== null && (
-                <BalanceCard balance={balance.balance} address={balance.address} />
-              )}
+              <BalanceCard
+                balance={walletData.balance.balance}
+                address={walletData.balance.address}
+              />
 
               {/* Tokens */}
               <FlatList
                 ListHeaderComponent={
-                  <View className="pt-6 pb-2">
+                  <View className="flex-row justify-between pt-6 pb-2">
                     <Text variant="large" className="text-foreground">
                       Tokens
+                    </Text>
+                    <Text variant="small" className="text-muted-foreground active:opacity-60">
+                      {walletData.allTokens.length} tokens
                     </Text>
                   </View>
                 }
@@ -281,27 +297,22 @@ const TransactionScreen = () => {
                       {canShowLess && (
                         <Pressable
                           onPress={handleShowLessTokens}
-                          className="flex-1 items-center py-3 active:opacity-60">
+                          className="flex-1 items-center py-3 active:opacity-60"
+                        >
                           <Text variant="small" className="text-muted-foreground">
                             Show less
                           </Text>
                         </Pressable>
                       )}
-                      {canShowLess && hasMoreTokens && (
-                        <View className="bg-border w-px" />
-                      )}
+                      {canShowLess && hasMoreTokens && <View className="bg-border w-px" />}
                       {hasMoreTokens && (
                         <Pressable
                           onPress={handleLoadMoreTokens}
-                          disabled={loadingTokenMeta}
-                          className="flex-1 items-center py-3 active:opacity-60">
-                          {loadingTokenMeta ? (
-                            <ActivityIndicator size="small" />
-                          ) : (
-                            <Text variant="small" className="text-primary">
-                              Load {Math.min(TOKEN_PAGE, allTokens.length - visibleTokens.length)} more
-                            </Text>
-                          )}
+                          className="flex-1 items-center py-3 active:opacity-60"
+                        >
+                          <Text variant="small" className="text-primary">
+                            Load more
+                          </Text>
                         </Pressable>
                       )}
                     </View>
@@ -309,7 +320,7 @@ const TransactionScreen = () => {
                 }
                 scrollEnabled={false}
                 keyExtractor={(item) => item.mint}
-                data={visibleTokens}
+                data={walletData.visibleTokens}
                 renderItem={({ item, index }) => (
                   <>
                     {index !== 0 && <View className="bg-border mx-1 h-px" />}
@@ -329,11 +340,12 @@ const TransactionScreen = () => {
                 }
                 ListEmptyComponent={<EmptyTransactions />}
                 ListFooterComponent={
-                  hasMoreTx ? (
+                  walletData.hasMoreTx ? (
                     <Pressable
                       onPress={handleLoadMoreTransactions}
                       disabled={loadingMore}
-                      className="active:opacity-60">
+                      className="active:opacity-60"
+                    >
                       <View className="border-border mx-1 items-center border-t py-3">
                         {loadingMore ? (
                           <ActivityIndicator size="small" />
@@ -348,7 +360,7 @@ const TransactionScreen = () => {
                 }
                 scrollEnabled={false}
                 keyExtractor={(item) => item.signature}
-                data={transactions}
+                data={walletData.transactions}
                 renderItem={({ item, index }) => (
                   <>
                     {index !== 0 && <View className="bg-border mx-1 h-px" />}

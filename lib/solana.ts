@@ -1,5 +1,4 @@
 import { LAMPORTS_PER_SOL } from '@/constants/solana'
-import { fetchAllDigitalAsset } from '@metaplex-foundation/mpl-token-metadata-kit'
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token'
 import {
   address,
@@ -8,11 +7,11 @@ import {
   type TransactionError,
   type createSolanaRpc,
 } from '@solana/kit'
-import axios from 'axios'
+import axios, { isAxiosError } from 'axios'
 
 export type SolanaRpc = ReturnType<typeof createSolanaRpc>
 
-export type FetchMetadataFromJupiterResult = {
+export interface FetchMetadataFromJupiterResult {
   id: string
   name: string
   symbol: string
@@ -63,20 +62,26 @@ export const getBalance = async (rpc: SolanaRpc, pubKey: Address): Promise<GetBa
 }
 
 export const getAllTokens = async (rpc: SolanaRpc, pubKey: Address): Promise<TokenBalance[]> => {
-  const response = await rpc
-    .getTokenAccountsByOwner(
-      pubKey,
-      { programId: TOKEN_PROGRAM_ADDRESS },
-      { encoding: 'jsonParsed' },
-    )
-    .send()
+  try {
+    const response = await rpc
+      .getTokenAccountsByOwner(
+        pubKey,
+        { programId: TOKEN_PROGRAM_ADDRESS },
+        { encoding: 'jsonParsed' },
+      )
+      .send()
 
-  return response.value
-    .map(({ account }) => ({
-      mint: account.data.parsed.info.mint as string,
-      amount: Number(account.data.parsed.info.tokenAmount.uiAmountString),
-    }))
-    .filter(({ amount }) => amount > 0)
+    return response.value
+      .map(({ account }) => ({
+        mint: account.data.parsed.info.mint as string,
+        amount: Number(account.data.parsed.info.tokenAmount.uiAmountString),
+      }))
+      .filter(({ amount }) => amount > 0)
+      .sort((a, b) => b.amount - a.amount) // Sort by amount in descending order
+  } catch (error) {
+    console.error('Error fetching token accounts:', error)
+    return [{ mint: '', amount: 0 }]
+  }
 }
 
 export const TX_PAGE_SIZE = 10
@@ -112,47 +117,48 @@ export const getTransactionDetail = async (rpc: SolanaRpc, signature: string) =>
 // Fetches token metadata (name, symbol, logoURI) from Jupiter Token API.
 // Plain HTTP — no crypto dependency. Falls back gracefully for unknown / devnet mints.
 
-export const getAllTokenMetadataFromJupiter = async (mints: string[]) => {
-  const mint = mints.join(',')
-
-  const res = await axios.get<FetchMetadataFromJupiterResult[]>(
-    `https://lite-api.jup.ag/token/${mint}`,
-
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    },
-  )
-  if (!res.data) return
-
-  return new Map(
-    res.data.map(({ id, name, symbol, icon, decimals, tokenProgram, totalSupply }) => [
-      id,
-      {
-        tokenName: name,
-        symbol,
-        logoURI: icon,
-        decimals,
-        tokenProgram,
-        totalSupply,
-      },
-    ]),
-  )
+export type TokenMetadata = Omit<FetchMetadataFromJupiterResult, 'id' | 'name' | 'icon'> & {
+  tokenName: FetchMetadataFromJupiterResult['name']
+  logoURI: FetchMetadataFromJupiterResult['icon']
 }
+export type GetAllTokenMetadataFromJupiterResponse = Map<
+  FetchMetadataFromJupiterResult['id'],
+  TokenMetadata
+>
 
-// Metaplex on-chain metadata fetch — requires crypto.subtle polyfill
-export const getAllTokenMetadata = async (rpc: SolanaRpc, mints: Address[]) => {
-  const assets = await fetchAllDigitalAsset(rpc, mints)
+export const getAllTokenMetadataFromJupiter = async (
+  mints: string[],
+): Promise<GetAllTokenMetadataFromJupiterResponse | undefined> => {
+  const mint = mints.join(',')
+  try {
+    const res = await axios.get<FetchMetadataFromJupiterResult[]>(
+      `https://lite-api.jup.ag/tokens/v2/search?query=${mint}`,
 
-  return new Map(
-    assets.map(({ address, metadata }) => [
-      address.toString(),
       {
-        tokenName: metadata.name,
-        symbol: metadata.symbol,
-        logoURI: metadata.uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    ]),
-  )
+    )
+    if (!res.data) return
+
+    return new Map(
+      res.data.map(({ id, name, symbol, icon, decimals, tokenProgram, totalSupply }) => [
+        id,
+        {
+          tokenName: name,
+          symbol,
+          logoURI: icon,
+          decimals,
+          tokenProgram,
+          totalSupply,
+        },
+      ]),
+    )
+  } catch (error) {
+    if (isAxiosError(error)) {
+      console.error('Axios error fetching token metadata from Jupiter:', error.message)
+      return
+    }
+  }
 }
