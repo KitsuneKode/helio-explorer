@@ -12,9 +12,10 @@ import { AddToWatchListButton } from '@/components/wallet-screen/watch-button'
 type Props = {
   balance: number
   address: string
+  solPriceUsd: number | null
 }
 
-export const BalanceCard = ({ balance, address }: Props) => {
+export const BalanceCard = ({ balance, address, solPriceUsd }: Props) => {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -44,12 +45,22 @@ export const BalanceCard = ({ balance, address }: Props) => {
 
       {/* Balance */}
       <View className="items-center py-8">
-        <View className="flex-row items-baseline gap-2">
+        <View className="flex-row items-baseline gap-2 ">
           <Text className="text-foreground text-5xl font-bold tracking-tight">
             {balance.toFixed(4)}
           </Text>
           <Text className="text-primary text-xl font-semibold">SOL</Text>
         </View>
+        {solPriceUsd != null && (
+          <Text className="text-muted-foreground mt-1 text-md">
+            ≈ $
+            {(balance * solPriceUsd).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{' '}
+            USD
+          </Text>
+        )}
       </View>
 
       {/* Address + copy */}

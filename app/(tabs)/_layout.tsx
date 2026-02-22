@@ -1,9 +1,12 @@
 import { Icon } from '@/components/ui/icon'
+import { useWalletResetStore } from '@/store/wallet-reset-store'
 import { THEME } from '@/lib/theme'
-import { Exchange03Icon, Home12Icon, ListX, Settings01Icon } from '@hugeicons/core-free-icons'
+import { Exchange03Icon, Home12Icon, Settings01Icon } from '@hugeicons/core-free-icons'
 import { Tabs } from 'expo-router'
 
 export default function Layout() {
+  const triggerReset = useWalletResetStore((s) => s.triggerReset)
+
   return (
     <Tabs>
       <Tabs.Screen
@@ -15,6 +18,14 @@ export default function Layout() {
           tabBarIcon: ({ color, size }) => <Icon icon={Home12Icon} size={size} color={color} />,
           tabBarLabelStyle: { fontSize: 12 },
         }}
+        listeners={({ navigation, route }) => ({
+          tabPress: () => {
+            const isFocused = navigation.isFocused()
+            if (isFocused) {
+              triggerReset()
+            }
+          },
+        })}
       />
       <Tabs.Screen
         name="swap"
