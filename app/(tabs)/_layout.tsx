@@ -1,6 +1,6 @@
 import { Icon } from '@/components/ui/icon'
 import { THEME } from '@/lib/theme'
-import { Exchange03Icon, Home12Icon } from '@hugeicons/core-free-icons'
+import { Exchange03Icon, Home12Icon, ListX, Settings01Icon } from '@hugeicons/core-free-icons'
 import { Tabs } from 'expo-router'
 
 export default function Layout() {
@@ -22,6 +22,15 @@ export default function Layout() {
           title: 'Swap',
           headerShown: false,
           tabBarIcon: ({ color, size }) => <Icon icon={Exchange03Icon} size={size} color={color} />,
+          tabBarLabelStyle: { fontSize: 12 },
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Icon icon={Settings01Icon} size={size} color={color} />,
           tabBarLabelStyle: { fontSize: 12 },
         }}
       />

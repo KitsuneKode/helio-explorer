@@ -7,20 +7,22 @@ class LocalStorage {
     this.storage = createMMKV({ id })
   }
 
-  getItem(key: string) {
-    return this.storage.getString(key)
+  getItem(key: string): string | null {
+    return this.storage.getString(key) ?? null
   }
-  contains(key: string) {
+  contains(key: string): boolean {
     return this.storage.contains(key)
   }
 
-  setItem(key: string, value: string) {
+  setItem(key: string, value: string): void {
     this.storage.set(key, value)
   }
 
-  removeItem(key: string) {
+  removeItem(key: string): void {
     this.storage.remove(key)
   }
 }
 
 export const storage = new LocalStorage('my-app-storage')
+
+export const watchlistStorage = new LocalStorage('watchlist-storage')

@@ -1,17 +1,19 @@
 import { Header } from '@/components/wallet-screen/header'
 import { WalletResults } from '@/components/wallet-screen/wallet-results'
 import { WalletSearchForm } from '@/components/wallet-screen/wallet-search-form'
+import { useLocalSearchParams } from 'expo-router'
 import { useWalletScreen } from '@/hooks/use-wallet-screen'
-import { BackToTopButton } from '@/components/wallet-screen/back-to-top-button'
+import { BackToTopButton } from '@/components/back-to-top-button'
 import { SafeAreaViewUniwind } from '@/components/styled-uniwind-components'
 import { useRef } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 
 const WalletScreen = () => {
+  const { walletAddress } = useLocalSearchParams<{ walletAddress?: string }>()
   const scrollRef = useRef<ScrollView>(null)
   const scrollY = useSharedValue(0)
-  const wallet = useWalletScreen()
+  const wallet = useWalletScreen(walletAddress)
 
   return (
     <SafeAreaViewUniwind className="bg-background flex-1" edges={['top']}>

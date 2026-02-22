@@ -4,19 +4,24 @@ import { Text } from '@/components/ui/text'
 import { AnimatedCard } from '@/components/ui/animated-card'
 import { SectionLabel } from '@/components/ui/section-label'
 import { formatAmount, formatUsd } from '@/utils/format-number'
+import { AddToWatchListButton } from '../wallet-screen/watch-button'
 
 type HoldingsCardProps = {
+  address: string
   amount: number
   symbol: string | null
   usdValue: number | null
 }
 
-export function HoldingsCard({ amount, symbol, usdValue }: HoldingsCardProps) {
+export function HoldingsCard({ amount, symbol, usdValue, address }: HoldingsCardProps) {
   return (
     <AnimatedCard delay={100}>
       <Card className="overflow-hidden p-0">
         <View className="px-5 pb-5 pt-4">
-          <SectionLabel label="Your Holdings" />
+          <View className="flex-row items-center gap-2 justify-between">
+            <SectionLabel label="Your Holdings" />
+            <AddToWatchListButton address={address} />
+          </View>
           <Text className="text-foreground text-3xl font-bold tabular-nums">
             {formatAmount(amount)}
           </Text>
