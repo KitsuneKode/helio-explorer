@@ -10,8 +10,12 @@ import {
 } from '@/types'
 import { getAllTokens, getAllTransactions, getBalance, isValidPublicKey } from '@/lib/solana'
 import { useHistoryStore } from '@/store/history-store'
+import { useWalletResetStore } from '@/store/wallet-reset-store'
 import { getMetaDataFromCacheOrFetch } from '@/lib/cache/token-metadata'
+import { fetchTokenJupiterDetail } from '@/lib/solana/token-details'
 import { TOKEN_PAGE, TXN_PAGE } from '@/constants/solana'
+
+const SOL_MINT = 'So11111111111111111111111111111111111111112'
 
 type WalletData = {
   balance: GetBalanceResult
@@ -19,10 +23,12 @@ type WalletData = {
   visibleTokens: GetTokensResult
   transactions: GetTransactionsResult
   hasMoreTx: boolean
+  solPriceUsd: number | null
 }
 
 export function useWalletScreen(initialAddress?: string) {
   const { rpc, network } = useNetwork()
+  const resetCount = useWalletResetStore((s) => s.resetCount)
   const autoSearchDone = useRef(false)
 
   const [value, setValue] = useState<string>(initialAddress ?? '')
@@ -44,6 +50,15 @@ export function useWalletScreen(initialAddress?: string) {
     setValue('')
     setWalletData(null)
   }, [network])
+
+  // Clear when Home tab is re-pressed (via reset signal)
+  const initialResetCount = useRef(resetCount)
+  useEffect(() => {
+    if (resetCount !== initialResetCount.current) {
+      setValue('')
+      setWalletData(null)
+    }
+  }, [resetCount])
 
   // Auto-search when navigated with an address param
   useEffect(() => {
@@ -74,10 +89,11 @@ export function useWalletScreen(initialAddress?: string) {
       Keyboard.dismiss()
       setLoading(true)
       try {
-        const [bal, tokn, txns] = await Promise.all([
+        const [bal, tokn, txns, solDetail] = await Promise.all([
           getBalance(rpc, publicKey),
           getAllTokens(rpc, publicKey),
           getAllTransactions(rpc, publicKey),
+          fetchTokenJupiterDetail(SOL_MINT),
         ])
 
         const firstPage = tokn.slice(0, TOKEN_PAGE)
@@ -88,6 +104,7 @@ export function useWalletScreen(initialAddress?: string) {
           visibleTokens: firstPage,
           transactions: txns,
           hasMoreTx: txns.length === TXN_PAGE,
+          solPriceUsd: solDetail.priceUsd,
         })
 
         useHistoryStore.getState().trackWallet(addr)
