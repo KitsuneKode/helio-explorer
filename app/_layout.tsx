@@ -38,6 +38,16 @@ export default function RootLayout() {
               headerShown: false,
             }}
           />
+
+          <Stack.Screen
+            name="watchlist"
+            options={{
+              title: 'Watchlist',
+              headerShown: false,
+            }}
+          />
+
+          <Stack.Screen name="history" options={{ headerShown: false }} />
         </Stack>
         <PortalHost />
       </ThemeProvider>

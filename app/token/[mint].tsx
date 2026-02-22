@@ -16,6 +16,7 @@ import { TokenInfoCard } from '@/components/token-detail/token-info-card'
 import { LinksCard } from '@/components/token-detail/links-card'
 import { short } from '@/utils/format-text'
 import { fetchTokenJupiterDetail } from '@/lib/solana/token-details'
+import { useHistoryStore } from '@/store/history-store'
 import type { TokenJupiterDetail } from '@/types'
 
 export default function TokenDetailScreen() {
@@ -32,6 +33,7 @@ export default function TokenDetailScreen() {
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
+    useHistoryStore.getState().trackToken(mint)
     let cancelled = false
     fetchTokenJupiterDetail(mint).then((detail) => {
       if (cancelled) return
@@ -75,7 +77,12 @@ export default function TokenDetailScreen() {
         />
 
         <View className="gap-4 px-5 pb-10">
-          <HoldingsCard amount={parsedAmount} symbol={displaySymbol} usdValue={usdValue} />
+          <HoldingsCard
+            amount={parsedAmount}
+            symbol={displaySymbol}
+            usdValue={usdValue}
+            address={mint}
+          />
 
           {!dataLoading && jupiterDetail?.description ? (
             <AnimatedCard delay={160}>

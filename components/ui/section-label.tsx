@@ -1,8 +1,16 @@
 import { Text } from '@/components/ui/text'
+import { cn } from '@/lib/utils'
 
-export function SectionLabel({ label }: { label: string }) {
+type Props = { label: string; className?: string }
+
+export function SectionLabel({ label, className }: Props) {
   return (
-    <Text className="text-muted-foreground mb-3 text-xs font-semibold tracking-widest uppercase">
+    <Text
+      className={cn(
+        'text-muted-foreground mb-3 text-xs font-semibold tracking-widest uppercase',
+        className,
+      )}
+    >
       {label}
     </Text>
   )

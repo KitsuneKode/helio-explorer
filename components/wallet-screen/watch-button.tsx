@@ -73,10 +73,18 @@ const PARTICLE_CONFIGS = [
 
 // ─── WatchButton ─────────────────────────────────────────────────────────────
 
-export function WatchButton({ address }: Props) {
-  const toggleWatchlist = useWatchlistStore((s) => s.toggleWatchlist)
-  const isWatched = useWatchlistStore((s) => s.isWatched(address))
+export function AddToWatchListButton({ address }: Props) {
+  const isFavorite = useWatchlistStore((s) => s.isFavorite(address))
+  const addToWatchlist = useWatchlistStore((s) => s.addToWatchlist)
+  const removeFromWatchlist = useWatchlistStore((s) => s.removeFromWatchlist)
 
+  const handleToggleFavorite = (addr: string) => {
+    if (isFavorite) {
+      removeFromWatchlist(addr)
+    } else {
+      addToWatchlist(addr)
+    }
+  }
   const heartScale = useSharedValue(1)
 
   // Particle shared values
@@ -116,7 +124,7 @@ export function WatchButton({ address }: Props) {
 
   const handlePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    toggleWatchlist(address)
+    handleToggleFavorite(address)
 
     // Quick squish → clean spring back (no double-spring wobble)
     heartScale.value = withSequence(
@@ -125,8 +133,8 @@ export function WatchButton({ address }: Props) {
     )
 
     // Particles burst only when adding to watchlist
-    if (!isWatched) burstParticles()
-  }, [address, isWatched, toggleWatchlist, heartScale, burstParticles])
+    if (!isFavorite) burstParticles()
+  }, [address, isFavorite, handleToggleFavorite, heartScale, burstParticles])
 
   return (
     <Pressable onPress={handlePress} hitSlop={12}>
@@ -148,10 +156,10 @@ export function WatchButton({ address }: Props) {
           <Icon
             icon={FavouriteIcon}
             className={
-              isWatched ? 'text-rose-500 size-[22px]' : 'text-muted-foreground size-[22px]'
+              isFavorite ? 'text-rose-500 size-[22px]' : 'text-muted-foreground size-[22px]'
             }
-            fill={isWatched ? 'currentColor' : 'none'}
-            strokeWidth={isWatched ? 0 : 1.75}
+            fill={isFavorite ? 'currentColor' : 'none'}
+            strokeWidth={isFavorite ? 0 : 1.75}
           />
         </AnimatedViewUniwind>
       </View>

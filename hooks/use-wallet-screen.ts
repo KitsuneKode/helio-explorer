@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, Keyboard } from 'react-native'
 import { router } from 'expo-router'
 import { useNetwork } from '@/context/network-context'
@@ -9,6 +9,7 @@ import {
   GetAllTokensBalanceResult,
 } from '@/types'
 import { getAllTokens, getAllTransactions, getBalance, isValidPublicKey } from '@/lib/solana'
+import { useHistoryStore } from '@/store/history-store'
 import { getMetaDataFromCacheOrFetch } from '@/lib/cache/token-metadata'
 import { TOKEN_PAGE, TXN_PAGE } from '@/constants/solana'
 
@@ -20,10 +21,11 @@ type WalletData = {
   hasMoreTx: boolean
 }
 
-export function useWalletScreen() {
+export function useWalletScreen(initialAddress?: string) {
   const { rpc, network } = useNetwork()
+  const autoSearchDone = useRef(false)
 
-  const [value, setValue] = useState<string>('')
+  const [value, setValue] = useState<string>(initialAddress ?? '')
   const [loading, setLoading] = useState(false)
   const [loadingMoreTxn, setLoadingMoreTxn] = useState(false)
   const [loadingMoreTkn, setLoadingMoreTkn] = useState(false)
@@ -43,6 +45,18 @@ export function useWalletScreen() {
     setWalletData(null)
   }, [network])
 
+  // Auto-search when navigated with an address param
+  useEffect(() => {
+    if (initialAddress && !autoSearchDone.current) {
+      autoSearchDone.current = true
+      setValue(initialAddress)
+      const timer = setTimeout(() => {
+        handleSearchAddress(initialAddress)
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [initialAddress])
+
   const resetResults = () => setWalletData(null)
 
   const handleChangeValue = (text: string) => setValue(text)
@@ -52,6 +66,47 @@ export function useWalletScreen() {
     resetResults()
   }
 
+  const handleSearchAddress = useCallback(
+    async (addr: string) => {
+      const { success, address: publicKey } = isValidPublicKey(addr)
+      if (!success) return Alert.alert('Validation Error', 'Please enter a valid public key')
+
+      Keyboard.dismiss()
+      setLoading(true)
+      try {
+        const [bal, tokn, txns] = await Promise.all([
+          getBalance(rpc, publicKey),
+          getAllTokens(rpc, publicKey),
+          getAllTransactions(rpc, publicKey),
+        ])
+
+        const firstPage = tokn.slice(0, TOKEN_PAGE)
+
+        setWalletData({
+          balance: bal,
+          allTokens: tokn,
+          visibleTokens: firstPage,
+          transactions: txns,
+          hasMoreTx: txns.length === TXN_PAGE,
+        })
+
+        useHistoryStore.getState().trackWallet(addr)
+
+        if (firstPage.length > 0) {
+          getMetaDataFromCacheOrFetch(firstPage.map((t) => t.mint)).then((metaMap) => {
+            patchVisible(firstPage.map((t) => ({ ...t, ...metaMap.get(t.mint) })))
+          })
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err as Error)
+        Alert.alert('Something went Wrong', 'Failed to fetch data. Please try again later.')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [rpc],
+  )
+
   const handleSearch = async () => {
     const addr = value.trim()
 
@@ -60,39 +115,7 @@ export function useWalletScreen() {
       return Alert.alert('Validation Error', 'Please enter a public key')
     }
 
-    const { success, address: publicKey } = isValidPublicKey(addr)
-    if (!success) return Alert.alert('Validation Error', 'Please enter a valid public key')
-
-    Keyboard.dismiss()
-    setLoading(true)
-    try {
-      const [bal, tokn, txns] = await Promise.all([
-        getBalance(rpc, publicKey),
-        getAllTokens(rpc, publicKey),
-        getAllTransactions(rpc, publicKey),
-      ])
-
-      const firstPage = tokn.slice(0, TOKEN_PAGE)
-
-      setWalletData({
-        balance: bal,
-        allTokens: tokn,
-        visibleTokens: firstPage,
-        transactions: txns,
-        hasMoreTx: txns.length === TXN_PAGE,
-      })
-
-      if (firstPage.length > 0) {
-        getMetaDataFromCacheOrFetch(firstPage.map((t) => t.mint)).then((metaMap) => {
-          patchVisible(firstPage.map((t) => ({ ...t, ...metaMap.get(t.mint) })))
-        })
-      }
-    } catch (err) {
-      console.error('Error fetching data:', err as Error)
-      Alert.alert('Something went Wrong', 'Failed to fetch data. Please try again later.')
-    } finally {
-      setLoading(false)
-    }
+    await handleSearchAddress(addr)
   }
 
   const handleLoadMoreTransactions = async () => {
@@ -195,6 +218,10 @@ export function useWalletScreen() {
     handleShowLessTokens,
     handleTokenPress,
     handleTransactionPress,
+    handleQuickSearch: (address: string) => {
+      setValue(address)
+      handleSearchAddress(address)
+    },
   }
 }
 

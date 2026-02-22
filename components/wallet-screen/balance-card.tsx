@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Icon } from '@/components/ui/icon'
 import { Text } from '@/components/ui/text'
 import { short } from '@/utils/format-text'
-import { WatchButton } from '@/components/wallet-screen/watch-button'
+import { AddToWatchListButton } from '@/components/wallet-screen/watch-button'
 
 type Props = {
   balance: number
@@ -39,7 +39,7 @@ export const BalanceCard = ({ balance, address }: Props) => {
             SOL Balance
           </Text>
         </View>
-        <WatchButton address={address} />
+        <AddToWatchListButton address={address} />
       </View>
 
       {/* Balance */}

@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 import { Text } from '../ui/text'
-import { NetworkToggle } from '@/components/wallet-screen/network-toggle'
+import { NetworkToggle } from '@/components/network-toggle'
 import { ThemeToggle } from '@/components/theme-toggle-button'
 
 export function Header() {

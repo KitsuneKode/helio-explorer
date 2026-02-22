@@ -18,6 +18,7 @@ export function WalletResults({
   handleTokenPress,
   handleLoadMoreTransactions,
   handleTransactionPress,
+  handleQuickSearch,
 }: Pick<
   UseWalletScreenResult,
   | 'loading'
@@ -32,9 +33,10 @@ export function WalletResults({
   | 'handleTokenPress'
   | 'handleLoadMoreTransactions'
   | 'handleTransactionPress'
+  | 'handleQuickSearch'
 >) {
   if (loading) return <SearchLoading />
-  if (!hasSearched || !walletData) return <WalletPrompt />
+  if (!hasSearched || !walletData) return <WalletPrompt onQuickSearch={handleQuickSearch} />
 
   return (
     <>
