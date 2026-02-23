@@ -1,3 +1,4 @@
+import { install } from 'react-native-quick-crypto'
 import { getRandomValues as expoCryptoGetRandomValues } from 'expo-crypto'
 import { Buffer } from 'buffer'
 
@@ -16,3 +17,5 @@ if (typeof crypto === 'undefined') {
     get: () => webCrypto,
   })
 }
+
+install()

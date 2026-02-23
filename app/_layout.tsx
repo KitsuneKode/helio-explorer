@@ -50,6 +50,7 @@ export default function RootLayout() {
             />
 
             <Stack.Screen name="history" options={{ headerShown: false }} />
+            <Stack.Screen name="swap-history" options={{ headerShown: false }} />
             <Stack.Screen
               name="send-sol"
               options={{

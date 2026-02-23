@@ -87,6 +87,12 @@ export default function SettingsScreen() {
             onPress={() => router.push('/watchlist')}
             right={<Icon icon={ArrowRight01Icon} className="text-muted-foreground size-5" />}
           />
+          <Separator />
+          <SettingsRow
+            label="Swap History"
+            onPress={() => router.push('/swap-history')}
+            right={<Icon icon={ArrowRight01Icon} className="text-muted-foreground size-5" />}
+          />
         </Card>
 
         {/* Wallet */}
