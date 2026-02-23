@@ -14,6 +14,7 @@ import { SwapQuote } from '@/types'
 import { useUserWallet } from './use-user-wallet'
 import { useNetwork } from '@/context/network-context'
 import { useSwapResetStore } from '@/store/swap-reset-store'
+import { useSwapHistoryStore } from '@/store/swap-history-store'
 import { VersionedTransaction } from '@solana/web3.js'
 
 export function useSwapScreen() {
@@ -26,6 +27,7 @@ export function useSwapScreen() {
   const inputTextColor = isDark ? '#F4F4F5' : '#18181B'
   const placeholderColor = '#71717A'
 
+  const addSwapEntry = useSwapHistoryStore((s) => s.addSwapEntry)
   const resetCount = useSwapResetStore((s) => s.resetCount)
   const [solBalance, setSolBalance] = useState<number | null>(null)
 
@@ -253,6 +255,22 @@ export function useSwapScreen() {
     swapTimerRef.current = setTimeout(() => setSwapStatus('idle'), delay)
   }
 
+  const recordSwap = (status: 'success' | 'failed', sig: string | null) => {
+    addSwapEntry(
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        fromToken,
+        toToken,
+        fromAmount: payAmount,
+        toAmount: status === 'success' ? receiveDisplay : '',
+        timestamp: Date.now(),
+        status,
+        signature: sig,
+      },
+      network,
+    )
+  }
+
   const handleCtaPress = async () => {
     if (!canSwap || !publicKey || swapStatus !== 'idle') return
 
@@ -268,6 +286,7 @@ export function useSwapScreen() {
       if (!swapResponse) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
         setSwapStatus('failed')
+        recordSwap('failed', null)
         resetSwapStatus(2000)
         Alert.alert('Swap Failed', 'Unable to create swap transaction. Please try again.')
         return
@@ -280,6 +299,7 @@ export function useSwapScreen() {
       if (signature) {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
         setSwapStatus('success')
+        recordSwap('success', signature)
 
         const successFrom = fromToken.symbol
         const successTo = toToken.symbol
@@ -303,6 +323,7 @@ export function useSwapScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       setSwapStatus('failed')
+      recordSwap('failed', null)
       resetSwapStatus(2000)
       Alert.alert(
         'Swap Failed',
@@ -316,6 +337,7 @@ export function useSwapScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       setSwapStatus('failed')
+      recordSwap('failed', null)
       resetSwapStatus(2000)
       Alert.alert('Swap Failed', 'Something went wrong. Please try again.')
     }

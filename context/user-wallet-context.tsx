@@ -12,7 +12,7 @@ import { useNetwork } from '@/context/network-context'
 
 const APP_IDENTITY = {
   name: 'Helio',
-  uri: 'https://helio.app',
+  uri: 'https://helio.kitsnelabs.xyz',
   icon: 'favicon.ico',
 }
 
