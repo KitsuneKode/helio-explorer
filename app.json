@@ -8,12 +8,10 @@
     "scheme": "helio",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.solscan"
+      "bundleIdentifier": "com.kitsunekode.helio"
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -21,7 +19,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.solscan"
+      "package": "com.kitsunekode.helio"
     },
     "web": {
       "bundler": "metro",
