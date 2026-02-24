@@ -28,7 +28,7 @@ type WalletData = {
 }
 
 export function useWalletScreen(initialAddress?: string) {
-  const { rpc, network } = useNetwork()
+  const { rpc, network, heliusDevnetRpcUrl } = useNetwork()
   const resetCount = useWalletResetStore((s) => s.resetCount)
   const autoSearchDone = useRef(false)
   const mountedRef = useRef(true)
@@ -89,7 +89,7 @@ export function useWalletScreen(initialAddress?: string) {
           getBalance(rpc, publicKey),
           getAllTokens(rpc, publicKey),
           getAllTransactions(rpc, publicKey),
-          fetchTokenJupiterDetail(SOL_MINT, network),
+          fetchTokenJupiterDetail(SOL_MINT, network, heliusDevnetRpcUrl || undefined),
         ])
 
         console.log('token', tokn)
@@ -110,6 +110,7 @@ export function useWalletScreen(initialAddress?: string) {
           const metaMap = await getMetaDataFromCacheOrFetch({
             mints: firstPage.map((t) => t.mint),
             network,
+            heliusRpcUrl: heliusDevnetRpcUrl || undefined,
           })
           if (!mountedRef.current) return
           patchVisible(firstPage.map((t) => ({ ...t, ...metaMap.get(t.mint) })))
@@ -121,7 +122,7 @@ export function useWalletScreen(initialAddress?: string) {
         setLoading(false)
       }
     },
-    [rpc, network],
+    [rpc, network, heliusDevnetRpcUrl],
   )
 
   const handleSearch = async () => {
@@ -179,6 +180,7 @@ export function useWalletScreen(initialAddress?: string) {
       const metaMap = await getMetaDataFromCacheOrFetch({
         mints: nextSlice.map((t) => t.mint),
         network,
+        heliusRpcUrl: heliusDevnetRpcUrl || undefined,
       })
 
       setWalletData((prev) => {

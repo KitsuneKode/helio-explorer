@@ -23,9 +23,13 @@ builds/
 *.key
 *.mobileprovision
 
+
 # Metro
 .metro-health-check*
 
+.ignore*
+.env*
+.env
 # debug
 npm-debug.*
 yarn-debug.*

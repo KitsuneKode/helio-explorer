@@ -24,7 +24,7 @@ type WalletRow = { type: 'wallet'; address: string; key: string }
 type ListItem = SectionHeader | TokenRow | WalletRow
 
 export default function HistoryScreen() {
-  const { network } = useNetwork()
+  const { network, heliusDevnetRpcUrl } = useNetwork()
   const tokens = useHistoryStore((s) => s.data[network].tokens)
   const wallets = useHistoryStore((s) => s.data[network].wallets)
   const clearAll = useHistoryStore((s) => s.clearAll)
@@ -38,14 +38,18 @@ export default function HistoryScreen() {
     if (tokens.length === 0) return
     let cancelled = false
     const load = async () => {
-      const map = await getMetaDataFromCacheOrFetch({ mints: tokens.map((t) => t.mint), network })
+      const map = await getMetaDataFromCacheOrFetch({
+        mints: tokens.map((t) => t.mint),
+        network,
+        heliusRpcUrl: heliusDevnetRpcUrl || undefined,
+      })
       if (!cancelled) setMetaMap(map)
     }
     load()
     return () => {
       cancelled = true
     }
-  }, [tokens])
+  }, [tokens, network, heliusDevnetRpcUrl])
 
   const data: ListItem[] = []
 

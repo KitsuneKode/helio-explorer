@@ -1,52 +1,92 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import { createSolanaRpc } from '@solana/kit'
-import config from '@/config'
+import { clusterApiUrl } from '@solana/web3.js'
 import { storage } from '@/lib/storage'
 
 export type Network = 'mainnet' | 'devnet'
 
-const RPC_URLS: Record<Network, string> = {
-  mainnet: config.EXPO_PUBLIC_MAIN_NET_RPC_URL,
-  devnet: config.EXPO_PUBLIC_DEV_NET_RPC_URL,
-}
-
-const CUSTOM_RPC_KEY = 'custom-rpc-url'
+const STORAGE_KEYS = {
+  mainnet: 'rpc-url-mainnet',
+  devnet: 'rpc-url-devnet',
+  heliusDevnet: 'rpc-url-helius-devnet',
+} as const
 
 type NetworkContextValue = {
   network: Network
   rpc: ReturnType<typeof createSolanaRpc>
   toggleNetwork: () => void
-  customRpcUrl: string
-  setCustomRpcUrl: (url: string) => void
+  customMainnetRpc: string
+  customDevnetRpc: string
+  heliusDevnetRpcUrl: string
+  hasHeliusRpc: boolean
+  setCustomMainnetRpc: (url: string) => void
+  setCustomDevnetRpc: (url: string) => void
+  setHeliusDevnetRpcUrl: (url: string) => void
 }
 
 const NetworkContext = createContext<NetworkContextValue | null>(null)
 
+function loadUrl(key: string): string {
+  return storage.getItem(key) ?? ''
+}
+
+function saveUrl(key: string, url: string) {
+  const trimmed = url.trim()
+  if (trimmed) {
+    storage.setItem(key, trimmed)
+  } else {
+    storage.removeItem(key)
+  }
+  return trimmed
+}
+
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [network, setNetwork] = useState<Network>('mainnet')
-  const [customRpcUrl, setCustomRpcUrlState] = useState<string>(
-    () => storage.getItem(CUSTOM_RPC_KEY) ?? '',
+  const [customMainnetRpc, setCustomMainnetRpcState] = useState(() => loadUrl(STORAGE_KEYS.mainnet))
+  const [customDevnetRpc, setCustomDevnetRpcState] = useState(() => loadUrl(STORAGE_KEYS.devnet))
+  const [heliusDevnetRpcUrl, setHeliusDevnetRpcUrlState] = useState(() =>
+    loadUrl(STORAGE_KEYS.heliusDevnet),
   )
 
-  const effectiveUrl = customRpcUrl || RPC_URLS[network]
+  // Always have an RPC — fall back to Solana's public cluster URL
+  const mainnetRpcUrl = customMainnetRpc || clusterApiUrl('mainnet-beta')
+  const devnetRpcUrl = customDevnetRpc || clusterApiUrl('devnet')
+  const hasHeliusRpc = heliusDevnetRpcUrl.length > 0
+
+  const effectiveUrl = network === 'mainnet' ? mainnetRpcUrl : devnetRpcUrl
   const rpc = useMemo(() => createSolanaRpc(effectiveUrl), [effectiveUrl])
 
   const toggleNetwork = () => {
     setNetwork((prev) => (prev === 'mainnet' ? 'devnet' : 'mainnet'))
   }
 
-  const setCustomRpcUrl = (url: string) => {
-    const trimmed = url.trim()
-    if (trimmed) {
-      storage.setItem(CUSTOM_RPC_KEY, trimmed)
-    } else {
-      storage.removeItem(CUSTOM_RPC_KEY)
-    }
-    setCustomRpcUrlState(trimmed)
+  const setCustomMainnetRpc = (url: string) => {
+    setCustomMainnetRpcState(saveUrl(STORAGE_KEYS.mainnet, url))
+  }
+
+  const setCustomDevnetRpc = (url: string) => {
+    setCustomDevnetRpcState(saveUrl(STORAGE_KEYS.devnet, url))
+  }
+
+  const setHeliusDevnetRpcUrl = (url: string) => {
+    setHeliusDevnetRpcUrlState(saveUrl(STORAGE_KEYS.heliusDevnet, url))
   }
 
   return (
-    <NetworkContext.Provider value={{ network, rpc, toggleNetwork, customRpcUrl, setCustomRpcUrl }}>
+    <NetworkContext.Provider
+      value={{
+        network,
+        rpc,
+        toggleNetwork,
+        customMainnetRpc,
+        customDevnetRpc,
+        heliusDevnetRpcUrl,
+        hasHeliusRpc,
+        setCustomMainnetRpc,
+        setCustomDevnetRpc,
+        setHeliusDevnetRpcUrl,
+      }}
+    >
       {children}
     </NetworkContext.Provider>
   )

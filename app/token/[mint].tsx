@@ -29,7 +29,7 @@ export default function TokenDetailScreen() {
     logoURI?: string
   }>()
 
-  const { network } = useNetwork()
+  const { network, heliusDevnetRpcUrl } = useNetwork()
   const [imgError, setImgError] = useState(false)
   const [jupiterDetail, setJupiterDetail] = useState<TokenJupiterDetail | null>(null)
   const [dataLoading, setDataLoading] = useState(true)
@@ -38,7 +38,7 @@ export default function TokenDetailScreen() {
     useHistoryStore.getState().trackToken(mint, network)
     let cancelled = false
     const load = async () => {
-      const detail = await fetchTokenJupiterDetail(mint, network)
+      const detail = await fetchTokenJupiterDetail(mint, network, heliusDevnetRpcUrl || undefined)
       if (cancelled) return
       console.log('Fetched Jupiter detail for mint', mint, detail)
       setJupiterDetail(detail)

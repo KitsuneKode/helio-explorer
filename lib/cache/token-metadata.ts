@@ -3,7 +3,7 @@ import { getAllTokenMetadataFromJupiter, getAllTokenMetadataFromHelius } from '.
 import { storage } from '../storage'
 import type { Network } from '@/context/network-context'
 
-type Config = { mints: string[]; network: Network }
+type Config = { mints: string[]; network: Network; heliusRpcUrl?: string }
 
 const getFromCache = (mint: string): TokenMetadata | null => {
   try {
@@ -36,22 +36,25 @@ const getMetaDataAndMissingKeysFromCache = (mints: string[], network: Network) =
 }
 
 export const getMetaDataFromCacheOrFetch = async (config: Config) => {
-  const { mints, network } = config
+  const { mints, network, heliusRpcUrl } = config
   const { present, missing } = getMetaDataAndMissingKeysFromCache(mints, network)
 
   console.log(network, present, missing)
 
   if (missing.length !== 0) {
-    const metadataFromJupiter =
-      network === 'devnet'
-        ? await getAllTokenMetadataFromHelius(buildMints(missing))
-        : await getAllTokenMetadataFromJupiter(buildMints(missing))
-    if (!metadataFromJupiter) return present
+    // On devnet, skip Helius DAS fetch if no Helius URL — return cache only
+    if (network === 'devnet' && !heliusRpcUrl) return present
 
-    metadataFromJupiter.forEach((metadata, mint) => {
+    const metadata =
+      network === 'devnet'
+        ? await getAllTokenMetadataFromHelius(buildMints(missing), heliusRpcUrl!)
+        : await getAllTokenMetadataFromJupiter(buildMints(missing))
+    if (!metadata) return present
+
+    metadata.forEach((meta, mint) => {
       const mintWithNetworkSuffix = `${mint}-${network}`
-      storage.setItem(mintWithNetworkSuffix, JSON.stringify(metadata))
-      present.set(mint, metadata)
+      storage.setItem(mintWithNetworkSuffix, JSON.stringify(meta))
+      present.set(mint, meta)
     })
   }
 

@@ -32,9 +32,7 @@ export function AccountsCard({ accounts, delay }: AccountsCardProps) {
         <CardContent className="gap-3 px-5 pb-5 pt-0">
           {visible.map((acc, idx) => (
             <View key={acc.address} className="flex-row flex-wrap items-center gap-2">
-              <Text className="text-foreground font-mono text-sm">
-                {short(acc.address, 6)}
-              </Text>
+              <Text className="text-foreground font-mono text-sm">{short(acc.address, 6)}</Text>
               {idx === 0 && (
                 <View className="rounded bg-yellow-500/15 px-1.5 py-0.5">
                   <Text className="text-xs font-semibold text-yellow-500">FEE PAYER</Text>

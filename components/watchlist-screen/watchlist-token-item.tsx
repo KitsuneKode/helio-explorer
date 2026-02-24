@@ -19,15 +19,9 @@ export function WatchlistTokenItem({ address, metadata, onRemove }: Props) {
   }
 
   return (
-    <Pressable
-      onPress={handlePress}
-      className="flex-row items-center px-4 py-3"
-    >
+    <Pressable onPress={handlePress} className="flex-row items-center px-4 py-3">
       {metadata.logoURI ? (
-        <Image
-          source={{ uri: metadata.logoURI }}
-          className="size-10 rounded-full"
-        />
+        <Image source={{ uri: metadata.logoURI }} className="size-10 rounded-full" />
       ) : (
         <View className="bg-muted size-10 items-center justify-center rounded-full">
           <Icon icon={Coins01Icon} className="text-muted-foreground size-5" />
@@ -38,9 +32,7 @@ export function WatchlistTokenItem({ address, metadata, onRemove }: Props) {
         <Text className="text-foreground text-sm font-semibold" numberOfLines={1}>
           {metadata.tokenName}
         </Text>
-        <Text className="text-muted-foreground text-xs">
-          ${metadata.symbol}
-        </Text>
+        <Text className="text-muted-foreground text-xs">${metadata.symbol}</Text>
       </View>
 
       <Pressable onPress={() => onRemove(address)} hitSlop={12}>

@@ -11,7 +11,7 @@ export type WatchlistToken = { address: string; metadata: TokenMetadata }
 export function useWatchlistScreen() {
   const watchlist = useWatchlistStore((s) => s.watchlist)
   const removeFromWatchlist = useWatchlistStore((s) => s.removeFromWatchlist)
-  const { network } = useNetwork()
+  const { network, heliusDevnetRpcUrl } = useNetwork()
   const [tokens, setTokens] = useState<WatchlistToken[]>([])
   const [wallets, setWallets] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -31,7 +31,7 @@ export function useWatchlistScreen() {
     setLoading(true)
 
     const load = async () => {
-      const metaMap = await getMetaDataFromCacheOrFetch({ mints: watchlist, network })
+      const metaMap = await getMetaDataFromCacheOrFetch({ mints: watchlist, network, heliusRpcUrl: heliusDevnetRpcUrl || undefined })
       if (cancelled) return
 
       const classifiedTokens: WatchlistToken[] = []

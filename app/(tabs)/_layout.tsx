@@ -46,7 +46,7 @@ export default function Layout() {
           tabBarIcon: ({ color, size }) => <Icon icon={Home12Icon} size={size} color={color} />,
           tabBarLabelStyle: { fontSize: 12 },
         }}
-        listeners={({ navigation, route }) => ({
+        listeners={({ navigation }) => ({
           tabPress: () => {
             const isFocused = navigation.isFocused()
             if (isFocused) {

@@ -8,12 +8,16 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js'
 import { address } from '@solana/kit'
-import { useNetwork } from '@/context/network-context'
+import { useNetwork, type Network } from '@/context/network-context'
 
 const APP_IDENTITY = {
   name: 'Helio',
   uri: 'https://helio.kitsnelabs.xyz',
   icon: 'favicon.ico',
+}
+
+function getChain(network: Network) {
+  return network === 'mainnet' ? 'solana:mainnet-beta' : 'solana:devnet'
 }
 
 type UserWalletContextValue = {
@@ -43,7 +47,7 @@ export function UserWalletProvider({ children }: { children: React.ReactNode }) 
     try {
       const authResult = await transact(async (wallet: Web3MobileWallet) => {
         const result = await wallet.authorize({
-          chain: `solana:mainnet-beta`,
+          chain: getChain(network),
           identity: APP_IDENTITY,
         })
         return result
@@ -57,7 +61,7 @@ export function UserWalletProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setConnecting(false)
     }
-  }, [])
+  }, [network])
 
   const disconnect = useCallback(() => {
     setPublicKey(null)
@@ -90,7 +94,7 @@ export function UserWalletProvider({ children }: { children: React.ReactNode }) 
 
         const txSignature = await transact(async (wallet: Web3MobileWallet) => {
           await wallet.authorize({
-            chain: `solana:${network}`,
+            chain: getChain(network),
             identity: APP_IDENTITY,
           })
           const signatures = await wallet.signAndSendTransactions({
@@ -106,25 +110,28 @@ export function UserWalletProvider({ children }: { children: React.ReactNode }) 
     [publicKey, rpc, network],
   )
 
-  const signAndSendTransaction = useCallback(async (transaction: VersionedTransaction) => {
-    setSigning(true)
-    try {
-      const txSignature = await transact(async (wallet: Web3MobileWallet) => {
-        await wallet.authorize({
-          chain: 'solana:mainnet-beta',
-          identity: APP_IDENTITY,
-        })
-        const signatures = await wallet.signAndSendTransactions({
-          transactions: [transaction],
-        })
+  const signAndSendTransaction = useCallback(
+    async (transaction: VersionedTransaction) => {
+      setSigning(true)
+      try {
+        const txSignature = await transact(async (wallet: Web3MobileWallet) => {
+          await wallet.authorize({
+            chain: getChain(network),
+            identity: APP_IDENTITY,
+          })
+          const signatures = await wallet.signAndSendTransactions({
+            transactions: [transaction],
+          })
 
-        return signatures[0]
-      })
-      return txSignature
-    } finally {
-      setSigning(false)
-    }
-  }, [])
+          return signatures[0]
+        })
+        return txSignature
+      } finally {
+        setSigning(false)
+      }
+    },
+    [network],
+  )
 
   return (
     <UserWalletContext.Provider

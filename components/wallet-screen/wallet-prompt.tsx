@@ -18,7 +18,7 @@ type Props = {
 }
 
 export const WalletPrompt = ({ onQuickSearch }: Props) => {
-  const { network } = useNetwork()
+  const { network, heliusDevnetRpcUrl } = useNetwork()
   const recentWallets = useHistoryStore((s) => s.data[network].wallets)
   const watchlist = useWatchlistStore((s) => s.watchlist)
 
@@ -28,7 +28,11 @@ export const WalletPrompt = ({ onQuickSearch }: Props) => {
     if (watchlist.length === 0) return
     let cancelled = false
     const load = async () => {
-      const map = await getMetaDataFromCacheOrFetch({ mints: watchlist, network })
+      const map = await getMetaDataFromCacheOrFetch({
+        mints: watchlist,
+        network,
+        heliusRpcUrl: heliusDevnetRpcUrl || undefined,
+      })
       if (!cancelled) setWatchlistMeta(map)
     }
     load()

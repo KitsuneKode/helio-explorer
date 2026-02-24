@@ -70,9 +70,7 @@ export function TransactionInfoCard({
                   )}
                   <Text
                     variant="small"
-                    className={
-                      copiedSig ? 'text-primary font-semibold' : 'text-muted-foreground'
-                    }
+                    className={copiedSig ? 'text-primary font-semibold' : 'text-muted-foreground'}
                   >
                     {copiedSig ? 'Copied!' : 'Copy'}
                   </Text>

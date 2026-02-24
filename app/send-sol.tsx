@@ -34,7 +34,7 @@ function computeFontSize(val: string): number {
 
 export default function SendSolScreen() {
   const { publicKey, connected, sending, sendSOL, getBalance } = useUserWallet()
-  const { network } = useNetwork()
+  const { network, heliusDevnetRpcUrl } = useNetwork()
   const { color: placeholderColor } = useResolveClassNames('text-muted-foreground/40')
   const { color: inputTextColor } = useResolveClassNames('text-foreground')
 
@@ -52,7 +52,7 @@ export default function SendSolScreen() {
     const load = async () => {
       const [bal, detail] = await Promise.all([
         getBalance(),
-        fetchTokenJupiterDetail(SOL_MINT, network),
+        fetchTokenJupiterDetail(SOL_MINT, network, heliusDevnetRpcUrl || undefined),
       ])
       if (cancelled) return
       setBalance(bal)

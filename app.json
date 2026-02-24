@@ -11,7 +11,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kitsunekode.helio"
+      "bundleIdentifier": "com.anonymous.helio"
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -19,7 +19,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.kitsunekode.helio"
+      "package": "com.anonymous.helio"
     },
     "web": {
       "bundler": "metro",

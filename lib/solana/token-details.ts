@@ -2,7 +2,6 @@
 // Returns metadata, social links, AND market data in a single call.
 
 import { Network } from '@/context/network-context'
-import config from '@/config'
 import { PeriodStats, TokenJupiterDetail } from '@/types'
 import axios from 'axios'
 
@@ -40,9 +39,12 @@ function parsePeriodStats(raw: any): PeriodStats | null {
   }
 }
 
-async function fetchFromHelius(mint: string): Promise<TokenJupiterDetail> {
+async function fetchFromHelius(
+  mint: string,
+  rpcUrl: string,
+): Promise<TokenJupiterDetail> {
   const { data } = await axios.post(
-    config.EXPO_PUBLIC_DEV_NET_RPC_URL,
+    rpcUrl,
     {
       jsonrpc: '2.0',
       id: 'helio',
@@ -110,9 +112,14 @@ async function fetchFromJupiter(mint: string): Promise<TokenJupiterDetail> {
 export async function fetchTokenJupiterDetail(
   mint: string,
   network: Network,
+  heliusRpcUrl?: string,
 ): Promise<TokenJupiterDetail> {
   try {
-    return network === 'devnet' ? await fetchFromHelius(mint) : await fetchFromJupiter(mint)
+    if (network === 'devnet') {
+      if (!heliusRpcUrl) return EMPTY_DETAIL
+      return await fetchFromHelius(mint, heliusRpcUrl)
+    }
+    return await fetchFromJupiter(mint)
   } catch {
     return EMPTY_DETAIL
   }

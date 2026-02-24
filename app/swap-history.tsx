@@ -6,6 +6,7 @@ import {
   CancelCircleIcon,
   CheckmarkCircle01Icon,
   Exchange03Icon,
+  Coins01Icon,
 } from '@hugeicons/core-free-icons'
 import { SafeAreaViewUniwind } from '@/components/styled-uniwind-components'
 import { Text } from '@/components/ui/text'
@@ -16,7 +17,6 @@ import { AnimatedCard } from '@/components/ui/animated-card'
 import { ThemeToggle } from '@/components/theme-toggle-button'
 import { useSwapHistoryStore, type SwapHistoryEntry } from '@/store/swap-history-store'
 import { useNetwork } from '@/context/network-context'
-import { Coins01Icon } from '@hugeicons/core-free-icons'
 
 function timeAgo(timestamp: number): string {
   const diff = Date.now() - timestamp
@@ -59,71 +59,68 @@ export default function SwapHistoryScreen() {
 
   const isEmpty = entries.length === 0
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: SwapHistoryEntry; index: number }) => {
-      const canNavigate = item.status === 'success' && item.signature
-      return (
-        <AnimatedCard delay={index * 60}>
-          <Pressable
-            onPress={
-              canNavigate
-                ? () =>
-                    router.push({
-                      pathname: '/transaction/[signature]',
-                      params: { signature: item.signature! },
-                    })
-                : undefined
-            }
-            className="flex-row items-center px-4 py-3"
-            style={!canNavigate ? { opacity: 0.85 } : undefined}
-          >
-            {/* Overlapping token logos */}
-            <View className="relative" style={{ width: 40, height: 28 }}>
-              <View style={{ position: 'absolute', left: 0, top: 0, zIndex: 1 }}>
-                <SwapTokenLogo uri={item.fromToken.logo} size={28} />
-              </View>
-              <View
-                style={{
-                  position: 'absolute',
-                  left: 16,
-                  top: 0,
-                  zIndex: 0,
-                  borderRadius: 14,
-                  borderWidth: 1.5,
-                  borderColor: 'transparent',
-                }}
-              >
-                <SwapTokenLogo uri={item.toToken.logo} size={28} />
-              </View>
+  const renderItem = useCallback(({ item, index }: { item: SwapHistoryEntry; index: number }) => {
+    const canNavigate = item.status === 'success' && item.signature
+    return (
+      <AnimatedCard delay={index * 60}>
+        <Pressable
+          onPress={
+            canNavigate
+              ? () =>
+                  router.push({
+                    pathname: '/transaction/[signature]',
+                    params: { signature: item.signature! },
+                  })
+              : undefined
+          }
+          className="flex-row items-center px-4 py-3"
+          style={!canNavigate ? { opacity: 0.85 } : undefined}
+        >
+          {/* Overlapping token logos */}
+          <View className="relative" style={{ width: 40, height: 28 }}>
+            <View style={{ position: 'absolute', left: 0, top: 0, zIndex: 1 }}>
+              <SwapTokenLogo uri={item.fromToken.logo} size={28} />
             </View>
+            <View
+              style={{
+                position: 'absolute',
+                left: 16,
+                top: 0,
+                zIndex: 0,
+                borderRadius: 14,
+                borderWidth: 1.5,
+                borderColor: 'transparent',
+              }}
+            >
+              <SwapTokenLogo uri={item.toToken.logo} size={28} />
+            </View>
+          </View>
 
-            {/* Center: symbols + amounts */}
-            <View className="ml-3 flex-1">
-              <Text className="text-foreground text-sm font-semibold" numberOfLines={1}>
-                {item.fromToken.symbol} → {item.toToken.symbol}
-              </Text>
-              <Text className="text-muted-foreground text-xs" numberOfLines={1}>
-                {item.fromAmount} {item.fromToken.symbol}
-                {item.toAmount ? ` → ${item.toAmount} ${item.toToken.symbol}` : ''}
-              </Text>
-            </View>
+          {/* Center: symbols + amounts */}
+          <View className="ml-3 flex-1">
+            <Text className="text-foreground text-sm font-semibold" numberOfLines={1}>
+              {item.fromToken.symbol} → {item.toToken.symbol}
+            </Text>
+            <Text className="text-muted-foreground text-xs" numberOfLines={1}>
+              {item.fromAmount} {item.fromToken.symbol}
+              {item.toAmount ? ` → ${item.toAmount} ${item.toToken.symbol}` : ''}
+            </Text>
+          </View>
 
-            {/* Right: status + time */}
-            <View className="items-end ml-2">
-              <Icon
-                icon={item.status === 'success' ? CheckmarkCircle01Icon : CancelCircleIcon}
-                className={`size-4.5 ${item.status === 'success' ? 'text-primary' : 'text-destructive'}`}
-              />
-              <Text className="text-muted-foreground mt-0.5 text-[10px]">
-                {timeAgo(item.timestamp)}
-              </Text>
-            </View>
-          </Pressable>
-        </AnimatedCard>
-      )
-    },
-    [],
-  )
+          {/* Right: status + time */}
+          <View className="items-end ml-2">
+            <Icon
+              icon={item.status === 'success' ? CheckmarkCircle01Icon : CancelCircleIcon}
+              className={`size-4.5 ${item.status === 'success' ? 'text-primary' : 'text-destructive'}`}
+            />
+            <Text className="text-muted-foreground mt-0.5 text-[10px]">
+              {timeAgo(item.timestamp)}
+            </Text>
+          </View>
+        </Pressable>
+      </AnimatedCard>
+    )
+  }, [])
 
   const renderSeparator = useCallback(() => <Separator />, [])
 

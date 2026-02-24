@@ -11,9 +11,6 @@ import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token'
 import { address, type Address, type Signature } from '@solana/kit'
 import axios, { isAxiosError } from 'axios'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
-import config from '@/config'
-
-const { EXPO_PUBLIC_HELIUS_DEV_NET_RPC_URL } = config
 type ValidatePublicKeyResult =
   | {
       success: true
@@ -133,10 +130,11 @@ export const getAllTokenMetadataFromJupiter = async (
 
 export const getAllTokenMetadataFromHelius = async (
   mints: string[],
+  rpcUrl: string,
 ): Promise<GetAllTokenMetadataResponse | undefined> => {
   try {
     const res = await axios.post(
-      EXPO_PUBLIC_HELIUS_DEV_NET_RPC_URL,
+      rpcUrl,
       {
         jsonrpc: '2.0',
         id: 'helio',

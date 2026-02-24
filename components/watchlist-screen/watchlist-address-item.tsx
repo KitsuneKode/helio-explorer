@@ -16,18 +16,13 @@ export function WatchlistAddressItem({ address, onRemove }: Props) {
   }
 
   return (
-    <Pressable
-      onPress={handlePress}
-      className="flex-row items-center px-4 py-3"
-    >
+    <Pressable onPress={handlePress} className="flex-row items-center px-4 py-3">
       <View className="bg-muted size-10 items-center justify-center rounded-full">
         <Icon icon={Wallet01Icon} className="text-muted-foreground size-5" />
       </View>
 
       <View className="ml-3 flex-1">
-        <Text className="text-foreground text-sm font-medium">
-          {short(address, 6)}
-        </Text>
+        <Text className="text-foreground text-sm font-medium">{short(address, 6)}</Text>
         <Text className="text-muted-foreground text-xs">Tap to search</Text>
       </View>
 
